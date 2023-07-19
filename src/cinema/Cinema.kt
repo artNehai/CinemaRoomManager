@@ -1,8 +1,28 @@
 package cinema
 
+import java.lang.Exception
+import java.lang.IndexOutOfBoundsException
+import java.lang.NumberFormatException
+
 private const val MAX_SEATS_IN_SMALL_HALL = 60
 private const val BACKSEAT_PRICE = 8
 private const val NORMAL_SEAT_PRICE = 10
+
+
+class Seat {
+
+    private var state = 'S'
+
+    fun book() {
+        if (state == 'B')
+            throw Exception("That ticket has already been purchased!")
+        state = 'B'
+    }
+
+    fun isBooked() = state == 'B'
+
+    override fun toString() = state.toString()
+}
 
 
 class Cinema(
@@ -10,7 +30,14 @@ class Cinema(
     private val seatsPerRow: Int,
 ) {
 
-    private val cinemaHall2D = MutableList(rows) { MutableList(seatsPerRow) { 'S' } }
+    private val cinemaHall2D = MutableList(rows) { MutableList(seatsPerRow) { Seat() } }
+    private val ticketsTotal = rows * seatsPerRow
+
+    private val frontRows = rows / 2
+    private val backRows = rows / 2 + rows % 2
+    private val totalIncome: Int = seatsPerRow *
+            (frontRows * getTicketPrice(frontRows) + backRows * getTicketPrice(frontRows + 1))
+
 
     fun printCinemaHall() {
         print("Cinema:\n ")
@@ -23,47 +50,89 @@ class Cinema(
     }
 
     fun bookTicket() {
-        println("Enter a row number:")
-        val rowPick = readln().toInt()
-        println("Enter a seat number in that row:")
-        val seatPick = readln().toInt()
+        var rowPick: Int
+        var seatPick: Int
+        while (true) {
+            rowPick = readPositiveInt("Enter a row number:")
+            seatPick = readPositiveInt("Enter a seat number in that row:")
+            println()
 
-        val ticketPrice =
-            if (rows * seatsPerRow > MAX_SEATS_IN_SMALL_HALL && rowPick > rows / 2)
-                BACKSEAT_PRICE
-            else
-                NORMAL_SEAT_PRICE
-        println("Ticket price: $$ticketPrice")
+            try {
+                cinemaHall2D[rowPick - 1][seatPick - 1].book()
+                break
+            } catch (e: IndexOutOfBoundsException) {
+                println("Wrong input!" + "\n")
+            } catch (e: Exception) {
+                println(e.message + "\n")
+            }
+        }
 
-        cinemaHall2D[rowPick - 1][seatPick - 1] = 'B'
+        println("Ticket price: $${getTicketPrice(rowPick)}")
+    }
+
+    fun showStatistics() {
+        var income = 0
+        var bookedTickets = 0
+        for (row in cinemaHall2D.indices) {
+            for (seat in cinemaHall2D[row]) {
+                if (seat.isBooked()) {
+                    income += getTicketPrice(row + 1)
+                    bookedTickets++
+                }
+            }
+        }
+        val bookedTicketsPercentage: Double = bookedTickets * 100.0 / ticketsTotal
+
+        println("Number of purchased tickets: $bookedTickets")
+        println("Percentage: ${"%.2f".format(bookedTicketsPercentage)}%")
+        println("Current income: $$income")
+        println("Total income: $$totalIncome")
+    }
+
+    private fun getTicketPrice(rowPick: Int): Int {
+        return if (ticketsTotal > MAX_SEATS_IN_SMALL_HALL && rowPick > rows / 2)
+            BACKSEAT_PRICE
+        else
+            NORMAL_SEAT_PRICE
     }
 }
 
 
 fun main() {
 
-    println("Enter the number of rows:")
-    val rows = readln().toInt()
-    println("Enter the number of seats in each row:")
-    val seatsPerRow = readln().toInt()
+    val rows = readPositiveInt("Enter the number of rows:")
+    val seatsPerRow = readPositiveInt("Enter the number of seats in each row:")
 
     val cinema = Cinema(rows, seatsPerRow)
-
-    var action: Int
     while (true) {
         println(
             "\n" + """
                 1. Show the seats
                 2. Buy a ticket
+                3. Statistics
                 0. Exit 
-                """.trimIndent() + "\n"
+                """.trimIndent()
         )
-        action = readln().toInt()
+        val action = readPositiveInt()
+        println()
 
         when (action) {
             1 -> cinema.printCinemaHall()
             2 -> cinema.bookTicket()
+            3 -> cinema.showStatistics()
             0 -> break
+        }
+    }
+}
+
+
+fun readPositiveInt(accompanyingText: String = ""): Int {
+    println(accompanyingText)
+    while (true) {
+        try {
+            return readln().toUInt().toInt()
+        } catch (e: NumberFormatException) {
+            println("Invalid value. Please enter whole positive number:")
         }
     }
 }
