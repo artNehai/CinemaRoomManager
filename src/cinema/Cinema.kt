@@ -1,27 +1,25 @@
 package cinema
 
-import java.lang.Exception
-import java.lang.IndexOutOfBoundsException
-import java.lang.NumberFormatException
-
 private const val MAX_SEATS_IN_SMALL_HALL = 60
 private const val BACKSEAT_PRICE = 8
 private const val NORMAL_SEAT_PRICE = 10
+private const val BOOKED_SEAT = "B"
+private const val FREE_SEAT = "S"
 
 
 class Seat {
 
-    private var state = 'S'
+    var isBooked = false
+        private set
 
     fun book() {
-        if (state == 'B')
+        if (isBooked)
             throw Exception("That ticket has already been purchased!")
-        state = 'B'
+        isBooked = true
     }
 
-    fun isBooked() = state == 'B'
-
-    override fun toString() = state.toString()
+    override fun toString() =
+        if (isBooked) BOOKED_SEAT else FREE_SEAT
 }
 
 
@@ -75,7 +73,7 @@ class Cinema(
         var bookedTickets = 0
         for (row in cinemaHall2D.indices) {
             for (seat in cinemaHall2D[row]) {
-                if (seat.isBooked()) {
+                if (seat.isBooked) {
                     income += getTicketPrice(row + 1)
                     bookedTickets++
                 }
